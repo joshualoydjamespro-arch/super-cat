@@ -1,0 +1,1331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Super Cat v04</title>
+  <style>
+    :root {
+      --ink: #1b1430;
+      --cream: #fff7e8;
+      --pink: #ff6fa8;
+      --green: #2f7a3a;
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body {
+      margin: 0; height: 100%; overflow: hidden;
+      background: #120c22;
+      font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+      color: var(--cream);
+      user-select: none;
+    }
+    #wrap {
+      position: relative;
+      width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+    }
+    canvas {
+      display: block;
+      background: #87ceeb;
+      max-width: 100%; max-height: 100%;
+      image-rendering: pixelated;
+      box-shadow: 0 0 0 4px #2a1d4a, 0 18px 50px rgba(0,0,0,.55);
+    }
+    #hud {
+      position: absolute; left: 12px; top: 10px;
+      pointer-events: none;
+      text-shadow: 0 2px 0 #0008;
+      font-size: 16px; line-height: 1.35;
+    }
+    #hud b { color: #ffe56a; }
+    #touch {
+      position: absolute; inset: 0; pointer-events: none;
+      touch-action: none;
+    }
+    #touch .pad {
+      pointer-events: auto;
+      position: absolute;
+      border: 4px solid #fff9;
+      background: #00000066;
+      color: #fff;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      touch-action: none;
+    }
+    #touch .pad:active, #touch .pad.held { background: #ffe56a88; color: #1b1430; }
+    #btnL, #btnR {
+      width: 108px; height: 108px; border-radius: 24px; font-size: 42px; bottom: 18px;
+    }
+    #btnL { left: 14px; }
+    #btnR { left: 132px; }
+    #btnJ {
+      right: 14px; bottom: 16px;
+      width: 150px; height: 150px;
+      border-radius: 32px;
+      font-size: 26px;
+      letter-spacing: 1px;
+    }
+    #btnP {
+      right: 14px; top: 10px;
+      width: 78px; height: 48px;
+      border-radius: 14px;
+      font-size: 15px;
+    }
+    .panel {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: #120c22ee;
+      padding: 16px;
+    }
+    .card {
+      width: min(720px, 100%);
+      background: linear-gradient(180deg, #3a2a63, #24183f);
+      border: 3px solid #ffe56a;
+      border-radius: 18px;
+      padding: 22px 22px 18px;
+      box-shadow: 0 16px 40px #0008;
+    }
+    h1 {
+      margin: 0 0 6px;
+      font-size: clamp(34px, 8vw, 58px);
+      letter-spacing: 1px;
+      text-align: center;
+      color: #fff;
+    }
+    h1 span { color: #ffe56a; }
+    .sub { text-align: center; opacity: .9; margin: 0 0 18px; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+    button.ui, .slot {
+      cursor: pointer;
+      border: 2px solid #fff6;
+      background: #ff6fa8;
+      color: #2a1020;
+      font-weight: 800;
+      font-size: 16px;
+      padding: 10px 16px;
+      border-radius: 12px;
+    }
+    button.ui.alt { background: #7ad3ff; color: #102030; }
+    button.ui.ghost { background: #ffffff22; color: #fff; }
+    .slot {
+      width: 150px; min-height: 92px;
+      background: #1b1233; color: #fff; text-align: left;
+    }
+    .slot.empty { opacity: .75; }
+    .slot:hover, button.ui:hover { filter: brightness(1.08); }
+    .worlds { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+    .world {
+      cursor: pointer; border-radius: 14px; padding: 12px;
+      border: 2px solid #fff5; text-align: center; color: #fff;
+    }
+    .world.lock { opacity: .45; cursor: not-allowed; }
+    .stages { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+    .stg {
+      cursor: pointer; border: 2px solid #fff5; border-radius: 12px;
+      padding: 12px 6px; text-align: center; background: #0004;
+    }
+    .stg.castle { background: #5b2d7a88; }
+    .stg.lock { opacity: .4; cursor: not-allowed; }
+    .workshop label { display: flex; justify-content: space-between; gap: 12px; margin: 8px 0; font-size: 14px; }
+    input[type=range] { width: 160px; }
+    .hidden { display: none !important; }
+    .credit { text-align: center; font-size: 12px; opacity: .7; margin-top: 10px; }
+    button.ui.book { background: #ffe56a; color: #2a1d10; }
+    .chapters { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin: 8px 0 12px; }
+    .chap {
+      min-width: 54px; padding: 6px 8px; border-radius: 10px;
+      border: 2px solid #fff5; background: #0004; cursor: pointer;
+      text-align: center; font-size: 12px; font-weight: 700;
+    }
+    .chap.lock { opacity: .45; cursor: not-allowed; }
+    .chap.on { outline: 2px solid #ffe56a; }
+    .story-page {
+      min-height: 150px; background: #fff8e8; color: #2a1d10;
+      border-radius: 12px; padding: 14px 16px; line-height: 1.45;
+    }
+    .story-page h3 { margin: 0 0 8px; color: #7a2d4a; }
+    .gemdot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-left: 4px; vertical-align: middle; }
+  </style>
+</head>
+<body>
+  <div id="wrap">
+    <canvas id="c" width="960" height="540"></canvas>
+    <div id="hud" class="hidden"></div>
+    <div id="touch" class="hidden">
+      <div class="pad" id="btnL">◀</div>
+      <div class="pad" id="btnR">▶</div>
+      <div class="pad" id="btnJ">JUMP</div>
+      <div class="pad" id="btnP">PAUSE</div>
+    </div>
+
+    <div id="title" class="panel">
+      <div class="card">
+        <h1><span>S</span>uper Cat</h1>
+        <p class="sub">A web browser platformer created by Joseph</p>
+        <div class="row">
+          <button class="ui" id="btnPlay">Play</button>
+          <button class="ui alt" id="btnHow">How to play</button>
+          <button class="ui book" id="btnBook">Storybook</button>
+        </div>
+        <p class="credit">v04 · 7 worlds · 6 stages each · 4 save files · created by Joseph</p>
+      </div>
+    </div>
+
+    <div id="how" class="panel hidden">
+      <div class="card">
+        <h1 style="font-size:32px">How to play</h1>
+        <p>Move with ← → or A D. Jump with ↑, W, or Space. On a phone, use the buttons.</p>
+        <p>Tap jump for a little hop. Hold jump for a bigger hop. Press jump again in the air for a double jump. Tap the second jump for a small boost, or hold it for a bigger one.</p>
+        <p>Collect fish. Every 50 fish is a 1-up. Regular stages end at the flag. Castle bosses drop a colored gem — touch the gem to finish the world. World 7 ends when you beat Teacup. No gem there.</p>
+        <p>You have 3 hearts. Enemies and spikes take one heart. If all three hearts are gone, you lose a life. Falling in a hole costs a whole life right away. A new life always comes back with 3 hearts.</p>
+        <p>Press P or ESC to open Joseph's Workshop and mess with the game while you play.</p>
+        <div class="row"><button class="ui" id="btnHowBack">Back</button></div>
+      </div>
+    </div>
+
+    <div id="book" class="panel hidden">
+      <div class="card">
+        <h1 style="font-size:28px">Super Cat's Quest</h1>
+        <p class="sub">The storybook · chapters unlock with gems</p>
+        <div class="chapters" id="chapRow"></div>
+        <div class="story-page" id="storyPage"></div>
+        <div class="row" style="margin-top:12px">
+          <button class="ui ghost" id="btnBookBack">Back</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="saves" class="panel hidden">
+      <div class="card">
+        <h1 style="font-size:32px">Save Files</h1>
+        <p class="sub">Four save files, just like Joseph asked.</p>
+        <div class="row" id="slotRow"></div>
+        <div class="row" style="margin-top:14px">
+          <button class="ui ghost" id="btnSavesBack">Back</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="map" class="panel hidden">
+      <div class="card">
+        <h1 style="font-size:30px" id="mapTitle">Worlds</h1>
+        <div id="worldGrid" class="worlds"></div>
+        <div id="stageBox" class="hidden">
+          <div class="stages" id="stageGrid"></div>
+        </div>
+        <div class="row" style="margin-top:14px">
+          <button class="ui ghost" id="btnMapBack">Back</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="pause" class="panel hidden">
+      <div class="card workshop">
+        <h1 style="font-size:28px">Joseph's Workshop</h1>
+        <p class="sub">Mess with Super Cat while it is being made.</p>
+        <label>Cat speed <input id="rSpeed" type="range" min="3" max="10" step="0.5" /></label>
+        <label>Jump power <input id="rJump" type="range" min="12" max="22" step="0.5" /></label>
+        <label>Gravity <input id="rGrav" type="range" min="0.4" max="1.2" step="0.05" /></label>
+        <label>Invincible <input id="chkInv" type="checkbox" /></label>
+        <label>Unlock all stages <input id="chkAll" type="checkbox" /></label>
+        <div class="row" style="margin-top:12px">
+          <button class="ui" id="btnResume">Keep playing</button>
+          <button class="ui alt" id="btnQuit">World map</button>
+          <button class="ui ghost" id="btnDefaults">Reset to default</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="msg" class="panel hidden">
+      <div class="card">
+        <h1 style="font-size:34px" id="msgTitle">Nice</h1>
+        <p class="sub" id="msgBody"></p>
+        <div class="row"><button class="ui" id="btnMsg">OK</button></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  const canvas = document.getElementById("c");
+  const ctx = canvas.getContext("2d");
+  const W = canvas.width, H = canvas.height;
+  const hud = document.getElementById("hud");
+
+  const WORLDS = [
+    { name: "Sunny Yard", skyTop: "#7ec8ff", skyBot: "#e8f7ff", ground: "#3fa34d", dirt: "#c9842a", accent: "#ffd93d", deco: "flowers" },
+    { name: "Whisper Forest", skyTop: "#4a7c59", skyBot: "#cfe8c9", ground: "#2d5a27", dirt: "#5a3a1c", accent: "#8fd14a", deco: "trees" },
+    { name: "Sandy Shores", skyTop: "#4ec3e0", skyBot: "#ffe7b8", ground: "#e2c36b", dirt: "#c9964a", accent: "#37b6d4", deco: "waves" },
+    { name: "Cloudy Peaks", skyTop: "#9ec5e8", skyBot: "#f4f7fb", ground: "#8b93a7", dirt: "#6b5344", accent: "#ffffff", deco: "peaks" },
+    { name: "Neon City", skyTop: "#1a1038", skyBot: "#4a1f6b", ground: "#2b2b40", dirt: "#171722", accent: "#ff4fd8", deco: "city" },
+    { name: "Crystal Caves", skyTop: "#140c28", skyBot: "#3b1a55", ground: "#3a2a58", dirt: "#1c122e", accent: "#7cf0ff", deco: "crystals" },
+    { name: "Royal Castles", skyTop: "#f08a4b", skyBot: "#6b2d6c", ground: "#6d6570", dirt: "#3d3230", accent: "#ffd36a", deco: "flags" }
+  ];
+
+  const SAVE_KEY = "superCat_saves_v04";
+  const GEM_COLORS = ["#e23d3d", "#ff8a2a", "#ffe14a", "#3dcc5a", "#3d8aff", "#9b5cff"];
+  const GEM_NAMES = ["red", "orange", "yellow", "green", "blue", "purple"];
+  const emptySlot = () => ({
+    used: false, name: "Empty",
+    world: 1, stage: 1,
+    unlocked: [1, 0, 0, 0, 0, 0, 0],
+    fishTotal: 0, fishToward1Up: 0, lives: 5, best: 0,
+    gems: [false, false, false, false, false, false],
+    teacup: false
+  });
+  const DEFAULTS = { speed: 5.2, jump: 16.4, grav: 0.58, inv: false, all: false };
+
+  let saves = loadSaves();
+  let slot = 0;
+  let save = emptySlot();
+
+  const keys = {};
+  const touch = { left: false, right: false, jump: false };
+  const workshop = { ...DEFAULTS };
+
+  let state = "TITLE";
+  let chosenWorld = 1;
+  let level = null;
+  let camX = 0;
+  let time = 0;
+  let particles = [];
+  let msgCb = null;
+  let soundsOn = true;
+
+  const player = {
+    x: 80, y: 200, vx: 0, vy: 0, w: 42, h: 38,
+    onGround: false, facing: 1, coyote: 0, jumpBuf: 0,
+    invuln: 0, anim: 0, lives: 5, hearts: 3, fish: 0, dead: false,
+    airJumps: 1, jumpHeld: false, jumpBoost: 0
+  };
+
+  function loadSaves() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(SAVE_KEY));
+      if (Array.isArray(raw) && raw.length === 4) return raw;
+    } catch (e) {}
+    return [emptySlot(), emptySlot(), emptySlot(), emptySlot()];
+  }
+  function persist() {
+    saves[slot] = JSON.parse(JSON.stringify(save));
+    localStorage.setItem(SAVE_KEY, JSON.stringify(saves));
+  }
+
+  function mulberry(seed) {
+    return function () {
+      seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+      let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+
+  function makeLevel(world, stage) {
+    const theme = WORLDS[world - 1];
+    const rnd = mulberry(world * 7919 + stage * 104729 + 42);
+    const isCastle = stage === 6;
+    const isFinal = world === 7 && stage === 6;
+    const hard = world >= 6;
+    const neon = world === 5;
+    const length = isCastle ? 2000 + world * 40 : 2600 + stage * 160 + world * 120 + (hard ? 400 : 0);
+    const plats = [];
+    const coins = [];
+    const foes = [];
+    const spikes = [];
+    const groundY = 430;
+    const maxLift = 118;
+
+    plats.push({ x: 0, y: groundY, w: 460, h: 140, kind: "ground" });
+    let x = 460;
+    while (x < length - 560) {
+      const gapBase = hard ? 118 : neon ? 100 : 62 + world * 6;
+      const gapSpan = hard ? 70 : neon ? 55 : 50 + stage * 4;
+      const gap = Math.min(168, gapBase + rnd() * gapSpan);
+      x += gap;
+      const minW = hard ? 88 : neon ? 110 : 150;
+      const extraW = hard ? 90 : neon ? 120 : 210;
+      const w = minW + rnd() * extraW;
+      const drop = rnd() < (0.10 + stage * 0.015 + (hard ? 0.12 : 0)) ? 28 : 0;
+      const gPlat = { x, y: groundY + drop, w, h: 140, kind: "ground" };
+      plats.push(gPlat);
+      const floatChance = 0.42 + stage * 0.03 + (world >= 4 ? 0.08 : 0);
+      if (rnd() < floatChance) {
+        const lift = 64 + rnd() * (hard ? 54 : 44);
+        const py = gPlat.y - Math.min(maxLift, lift);
+        const pw = (hard ? 64 : 86) + rnd() * (hard ? 50 : 90);
+        const fx = x + 12 + rnd() * 18;
+        plats.push({ x: fx, y: py, w: pw, h: 22, kind: "float" });
+        if (rnd() < 0.72) {
+          const n = hard ? 2 : 3;
+          for (let i = 0; i < n; i++) coins.push({ x: fx + 16 + i * 26, y: py - 28, r: 10, got: false });
+        }
+      }
+      x += w;
+    }
+    plats.push({ x: length - 560, y: groundY, w: 760, h: 140, kind: "ground" });
+
+    const tops = plats.filter(p => p.w >= 70);
+    const foeRate = hard ? 0.62 : neon ? 0.52 : 0.22 + world * 0.05 + stage * 0.03;
+    const spikeRate = hard ? 0.48 : neon ? 0.36 : 0.10 + stage * 0.03 + world * 0.02;
+    const foeSpeed = hard ? 2.15 : neon ? 1.85 : 1.05 + world * 0.12;
+    tops.forEach(p => {
+      if (p.x < 380 || p.x > length - 620) return;
+      if (!isFinal && rnd() < foeRate && p.w >= 90) {
+        const fw = 28, fh = 28;
+        const fx = p.x + 10 + rnd() * Math.max(8, p.w - fw - 20);
+        foes.push({
+          x: fx, y: p.y - fh, w: fw, h: fh,
+          vx: (rnd() < 0.5 ? -1 : 1) * foeSpeed,
+          left: p.x + 6, right: p.x + p.w - fw - 6,
+          kind: world === 5 ? "robomouse" : "mouse"
+        });
+      }
+      if (rnd() < spikeRate && p.w >= 80) {
+        const sw = 34, sh = 16;
+        const sx = p.x + 12 + rnd() * Math.max(8, p.w - sw - 24);
+        spikes.push({ x: sx, y: p.y - sh, w: sw, h: sh });
+      }
+    });
+    const trees = [];
+    if (theme.deco === "trees" || theme.deco === "flowers") {
+      const grounds = plats.filter(p => p.kind === "ground");
+      grounds.forEach(p => {
+        for (let tx = p.x + 24; tx < p.x + p.w - 28; tx += 90 + rnd() * 70) {
+          if (rnd() < 0.55) trees.push({ x: tx, y: p.y, flower: theme.deco === "flowers" || rnd() < 0.35 });
+        }
+      });
+    }
+    const sitsOnTop = (ent) => plats.some(p => {
+      const mid = ent.x + ent.w / 2;
+      return mid >= p.x + 4 && mid <= p.x + p.w - 4 && Math.abs((ent.y + ent.h) - p.y) <= 2;
+    });
+    const insidePlat = (ent) => plats.some(p =>
+      ent.x + ent.w > p.x + 6 && ent.x < p.x + p.w - 6 &&
+      ent.y + 2 < p.y + p.h && ent.y + ent.h - 2 > p.y + 4
+    );
+    for (let i = foes.length - 1; i >= 0; i--) {
+      if (!sitsOnTop(foes[i]) || insidePlat(foes[i])) foes.splice(i, 1);
+    }
+    for (let i = spikes.length - 1; i >= 0; i--) {
+      if (!sitsOnTop(spikes[i]) || insidePlat(spikes[i])) spikes.splice(i, 1);
+    }
+
+    const flyers = [];
+    const flyerKind = world === 5 ? "robobird" : world === 6 ? "bat" : (world === 4 || world === 7) ? "pelican" : null;
+    if (flyerKind) {
+      const nFly = hard ? 7 : neon ? 6 : 4 + stage;
+      for (let i = 0; i < nFly; i++) {
+        const fx = 420 + i * ((length - 900) / nFly) + rnd() * 80;
+        flyers.push({
+          x: fx, y: 70 + rnd() * 90, w: 36, h: 24,
+          vx: (rnd() < 0.5 ? -1 : 1) * (1.2 + world * 0.12),
+          baseY: 80 + rnd() * 70,
+          phase: rnd() * 6,
+          kind: flyerKind,
+          hang: flyerKind === "bat" && rnd() < 0.45,
+          hangT: 40 + rnd() * 120
+        });
+      }
+    }
+
+    const flagX = isCastle ? length - 280 : length - 220;
+    const goal = { x: flagX, y: groundY - 120, w: 18, h: 120 };
+
+    let boss = null;
+    if (isCastle) {
+      boss = {
+        x: length - 360, y: groundY - (isFinal ? 28 : 70),
+        w: isFinal ? 52 : 56, h: isFinal ? 42 : 56,
+        vx: isFinal ? 2.8 : 1.6, dir: -1,
+        hp: isFinal ? 5 : 3, hitFlash: 0,
+        final: isFinal, hop: 0
+      };
+    }
+    return { world, stage, theme, length, plats, coins, foes, spikes, trees, flyers, goal, gem: null, boss, groundY, complete: false };
+  }
+
+  function startStage(world, stage) {
+    level = makeLevel(world, stage);
+    Object.assign(player, {
+      x: 90, y: 300, vx: 0, vy: 0, onGround: false,
+      facing: 1, coyote: 0, jumpBuf: 0, invuln: 80,
+      anim: 0, fish: 0, dead: false, lives: save.lives, hearts: 3,
+      airJumps: 1, jumpHeld: false, jumpBoost: 0
+    });
+    camX = 0; particles = []; time = 0;
+    state = "PLAY";
+    show("title how saves map pause msg book", false);
+    hud.classList.remove("hidden");
+    document.getElementById("touch").classList.remove("hidden");
+    beep(520, 0.07);
+  }
+
+  function show(ids, on) {
+    ids.split(" ").forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.toggle("hidden", !on);
+    });
+  }
+
+  function toast(title, body, cb) {
+    document.getElementById("msgTitle").textContent = title;
+    document.getElementById("msgBody").textContent = body;
+    show("msg", true);
+    msgCb = cb || (() => show("msg", false));
+  }
+
+  const ac = new (window.AudioContext || window.webkitAudioContext)();
+  function beep(freq, dur, type = "square", vol = 0.04) {
+    if (!soundsOn || ac.state === "suspended") return;
+    const o = ac.createOscillator();
+    const g = ac.createGain();
+    o.type = type; o.frequency.value = freq;
+    g.gain.value = vol;
+    o.connect(g); g.connect(ac.destination);
+    o.start();
+    g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + dur);
+    o.stop(ac.currentTime + dur + 0.02);
+  }
+  function resumeAudio() { if (ac.state === "suspended") ac.resume(); }
+
+  function rects(a, b) {
+    return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+  }
+
+  function spawnP(x, y, col, n = 8) {
+    for (let i = 0; i < n; i++) {
+      particles.push({
+        x, y, vx: (Math.random() - 0.5) * 5, vy: -Math.random() * 4 - 1,
+        life: 30 + Math.random() * 20, col, s: 2 + Math.random() * 3
+      });
+    }
+  }
+
+  function gameOver() {
+    player.dead = true;
+    setTimeout(() => {
+      save.lives = 5;
+      persist();
+      toast("Oh no!", "Super Cat ran out of lives. Back to the world map.", () => {
+        show("msg", false); openMap();
+      });
+    }, 400);
+  }
+
+  function loseLife() {
+    if (player.dead) return;
+    player.lives -= 1;
+    player.hearts = 3;
+    save.lives = player.lives;
+    persist();
+    beep(140, 0.18, "sawtooth", 0.05);
+    spawnP(player.x + 20, player.y + 10, "#ff6fa8", 16);
+    if (player.lives <= 0) gameOver();
+    else {
+      player.invuln = 120;
+      player.vy = 0;
+      resetPos();
+    }
+  }
+
+  function hurt() {
+    if (workshop.inv || player.invuln > 0 || player.dead) return;
+    player.hearts -= 1;
+    player.invuln = 90;
+    player.vy = -8;
+    beep(160, 0.12, "sawtooth", 0.05);
+    spawnP(player.x + 20, player.y + 10, "#ff8aa8", 10);
+    if (player.hearts <= 0) loseLife();
+  }
+
+  function oneUp() {
+    player.lives = Math.min(99, player.lives + 1);
+    save.lives = player.lives;
+    persist();
+    spawnP(player.x + 20, player.y, "#7CFF8A", 18);
+    beep(520, 0.06, "sine"); setTimeout(() => beep(780, 0.08, "sine"), 70);
+  }
+
+  function takeFish() {
+    player.fish += 1;
+    save.fishToward1Up = (save.fishToward1Up || 0) + 1;
+    if (save.fishToward1Up >= 50) {
+      save.fishToward1Up = 0;
+      oneUp();
+    }
+  }
+
+  function beatStage() {
+    if (level.complete) return;
+    level.complete = true;
+    save.fishTotal += player.fish;
+    save.best = Math.max(save.best, save.fishTotal);
+    const w = level.world, s = level.stage;
+    if (s < 6) save.unlocked[w - 1] = Math.max(save.unlocked[w - 1], s + 1);
+    else if (w < 7) {
+      save.unlocked[w] = Math.max(save.unlocked[w], 1);
+      save.unlocked[w - 1] = 6;
+    } else save.unlocked[6] = 6;
+    if (s === 6) {
+      if (w < 7) {
+        save.gems[w - 1] = true;
+        save.world = Math.min(7, w + 1);
+      } else {
+        save.teacup = true;
+      }
+    } else { save.world = w; save.stage = s + 1; }
+    save.lives = Math.min(9, player.lives + 1);
+    persist();
+    beep(660, 0.1); setTimeout(() => beep(880, 0.16), 90);
+    const last = w === 7 && s === 6;
+    const gemLine = (s === 6 && w < 7) ? ` The ${GEM_NAMES[w - 1]} gem is yours. Chapter ${w} unlocked.` : "";
+    toast(last ? "SUPER CAT WINS!" : "Stage clear!",
+      last ? "Teacup the Labrador was no match for Joseph's hero. Chapter 7 and the Epilogue are unlocked." :
+      `World ${w} · Stage ${s} complete. Fish this stage: ${player.fish}.${gemLine}`,
+      () => { show("msg", false); openMap(); });
+  }
+
+  function update() {
+    if (state !== "PLAY" || !level || player.dead) {
+      time++;
+      return;
+    }
+    time++;
+    const left = keys["ArrowLeft"] || keys["a"] || keys["A"] || touch.left;
+    const right = keys["ArrowRight"] || keys["d"] || keys["D"] || touch.right;
+    const jump = keys["ArrowUp"] || keys["w"] || keys["W"] || keys[" "] || touch.jump;
+    const jumpPress = jump && !player.jumpHeld;
+    const jumpRelease = !jump && player.jumpHeld;
+    player.jumpHeld = jump;
+
+    if (player.onGround) {
+      player.coyote = 8;
+      player.airJumps = 1;
+    } else {
+      player.coyote = Math.max(0, player.coyote - 1);
+    }
+
+    const spd = workshop.speed;
+    if (left) { player.vx = -spd; player.facing = -1; }
+    else if (right) { player.vx = spd; player.facing = 1; }
+    else player.vx *= 0.72;
+
+    const tapJump = workshop.jump * 0.70;
+    const holdJump = workshop.jump;
+    if (jumpPress && (player.onGround || player.coyote > 0)) {
+      player.vy = -tapJump;
+      player.onGround = false;
+      player.coyote = 0;
+      player.jumpBoost = 14;
+      player.airJumps = 1;
+      beep(420, 0.06, "triangle");
+    } else if (jumpPress && player.airJumps > 0) {
+      player.vy = -tapJump * 0.96;
+      player.airJumps = 0;
+      player.jumpBoost = 12;
+      spawnP(player.x + 20, player.y + 30, "#fff", 6);
+      beep(560, 0.06, "triangle");
+    }
+    if (jump && player.jumpBoost > 0 && player.vy < 0) {
+      const extra = (holdJump - tapJump) / 12;
+      player.vy -= extra;
+      if (player.vy < -holdJump) player.vy = -holdJump;
+      player.jumpBoost--;
+    } else if (jumpRelease) {
+      player.jumpBoost = 0;
+      if (player.vy < -4) player.vy *= 0.58;
+    }
+    player.vy += workshop.grav;
+    if (player.vy > 16) player.vy = 16;
+
+    player.x += player.vx;
+    player.onGround = false;
+    for (const p of level.plats) {
+      if (rects(player, p)) {
+        if (player.vx > 0) player.x = p.x - player.w;
+        else if (player.vx < 0) player.x = p.x + p.w;
+      }
+    }
+    player.y += player.vy;
+    for (const p of level.plats) {
+      if (rects(player, p)) {
+        if (player.vy > 0 && player.y + player.h - player.vy <= p.y + 8) {
+          player.y = p.y - player.h;
+          player.vy = 0;
+          player.onGround = true;
+        } else if (player.vy < 0) {
+          player.y = p.y + p.h;
+          player.vy = 0.4;
+        }
+      }
+    }
+    if (player.x < 8) player.x = 8;
+    if (player.x > level.length - 40) player.x = level.length - 40;
+    if (player.y > H + 80) loseLife();
+
+    player.anim += Math.abs(player.vx) > 0.4 ? 0.25 : 0.08;
+    if (player.invuln > 0) player.invuln--;
+
+    for (const c of level.coins) {
+      if (!c.got && Math.hypot(c.x - (player.x + player.w / 2), c.y - (player.y + 12)) < 24) {
+        c.got = true; takeFish();
+        spawnP(c.x, c.y, "#ffd36a", 7);
+        beep(880 + player.fish * 12, 0.05, "sine");
+      }
+    }
+    for (const s of level.spikes) if (rects(player, s)) hurt();
+    for (const f of level.foes) {
+      f.x += f.vx;
+      if (f.x < f.left || f.x > f.right) f.vx *= -1;
+      if (rects(player, f)) {
+        if (player.vy > 1 && player.y + player.h - 12 < f.y + 10) {
+          f.x = -9999;
+          player.vy = -9;
+          spawnP(f.x, f.y, "#fff", 10);
+          beep(700, 0.07);
+        } else hurt();
+      }
+    }
+
+    if (level.boss && level.boss.hp > 0) {
+      const b = level.boss;
+      b.hop += 0.12;
+      b.x += b.dir * b.vx;
+      const minX = level.length - 520, maxX = level.length - 80;
+      if (b.x < minX) b.dir = 1;
+      if (b.x > maxX) b.dir = -1;
+      if (b.final) b.y = level.groundY - b.h + Math.sin(b.hop * 2) * 6;
+      else b.y = level.groundY - b.h - Math.abs(Math.sin(b.hop)) * 40;
+      if (b.hitFlash > 0) b.hitFlash--;
+      if (rects(player, b)) {
+        if (player.vy > 1 && player.y + player.h - 14 < b.y + 16) {
+          b.hp--; b.hitFlash = 14; player.vy = -11;
+          spawnP(b.x + b.w / 2, b.y, "#ff8ad1", 16);
+          beep(300, 0.1);
+          if (b.hp <= 0) {
+            spawnP(b.x + 20, b.y, "#ffe56a", 28);
+            if (b.final) setTimeout(beatStage, 280);
+            else {
+              level.gem = {
+                x: b.x + b.w / 2, y: level.groundY - 36,
+                color: GEM_COLORS[level.world - 1], got: false
+              };
+            }
+          }
+        } else hurt();
+      }
+    }
+    if (level.gem && !level.gem.got) {
+      level.gem.y += Math.sin(time * 0.12) * 0.15;
+      if (Math.hypot((player.x + player.w / 2) - level.gem.x, (player.y + 12) - level.gem.y) < 30) {
+        level.gem.got = true;
+        spawnP(level.gem.x, level.gem.y, level.gem.color, 20);
+        beatStage();
+      }
+    } else if (!level.boss && rects(player, { x: level.goal.x - 10, y: level.goal.y, w: 40, h: 130 })) {
+      beatStage();
+    }
+
+    if (level.flyers) {
+      for (const fl of level.flyers) {
+        fl.phase += 0.05;
+        if (fl.kind === "bat") {
+          fl.hangT--;
+          if (fl.hangT <= 0) {
+            fl.hang = !fl.hang;
+            fl.hangT = fl.hang ? 70 + Math.random() * 100 : 90 + Math.random() * 110;
+          }
+          if (fl.hang) {
+            fl.y += (18 - fl.y) * 0.08;
+          } else {
+            fl.x += fl.vx;
+            fl.y = fl.baseY + Math.sin(fl.phase) * 22;
+          }
+        } else {
+          fl.x += fl.vx;
+          fl.y = fl.baseY + Math.sin(fl.phase) * 18;
+        }
+        if (fl.x < 80) fl.vx = Math.abs(fl.vx);
+        if (fl.x > level.length - 80) fl.vx = -Math.abs(fl.vx);
+        if (fl.x > -50 && rects(player, fl)) {
+          if (player.vy > 1 && player.y + player.h - 12 < fl.y + 12) {
+            fl.x = -999;
+            player.vy = -9;
+            spawnP(fl.x, fl.y, "#fff", 8);
+            beep(740, 0.06);
+          } else hurt();
+        }
+      }
+    }
+
+    const target = player.x - 280;
+    camX += (target - camX) * 0.12;
+    if (camX < 0) camX = 0;
+    if (camX > level.length - W) camX = Math.max(0, level.length - W);
+
+    for (const p of particles) {
+      p.x += p.vx; p.y += p.vy; p.vy += 0.18; p.life--;
+    }
+    particles = particles.filter(p => p.life > 0);
+
+    const hp = "♥".repeat(Math.max(0, player.hearts)) + "♡".repeat(Math.max(0, 3 - player.hearts));
+    const to1 = 50 - (save.fishToward1Up || 0);
+    hud.innerHTML = `<b>Super Cat</b> · World ${level.world} ${level.theme.name} · Stage ${level.stage}${level.stage === 6 ? " Castle" : ""}<br><span style="color:#ff5b7a;letter-spacing:2px;font-size:20px">${hp}</span> · Lives <b>${player.lives}</b> · Fish <b>${player.fish}</b> · Next 1-up in <b>${to1}</b>`;
+  }
+
+  function resetPos() {
+    player.x = Math.max(90, camX + 80);
+    player.y = 200; player.vy = 0;
+  }
+
+  function draw() {
+    if (state !== "PLAY" || !level) {
+      drawIdleTitleCat();
+      return;
+    }
+    const th = level.theme;
+    const g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, th.skyTop); g.addColorStop(1, th.skyBot);
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    drawBackdrop(th);
+    ctx.save();
+    ctx.translate(-camX, 0);
+    drawDecor(th);
+    for (const p of level.plats) drawPlat(p, th);
+    for (const s of level.spikes) drawSpikes(s);
+    for (const c of level.coins) if (!c.got) drawFish(c.x, c.y, time);
+    for (const f of level.foes) if (f.x > -100) drawFoe(f);
+    if (level.flyers) for (const fl of level.flyers) if (fl.x > -100) drawFlyer(fl);
+    if (!(level.boss && level.boss.hp > 0) && !level.gem && level.stage !== 6) drawFlag(level.goal);
+    if (level.boss && level.boss.hp > 0) drawBoss(level.boss);
+    if (level.gem && !level.gem.got) drawGem(level.gem.x, level.gem.y, level.gem.color);
+    if (player.invuln % 6 < 4) drawCat(player.x, player.y, player.facing, player.anim, player.onGround, player.vy);
+    for (const p of particles) {
+      ctx.globalAlpha = Math.max(0, p.life / 40);
+      ctx.fillStyle = p.col;
+      ctx.fillRect(p.x, p.y, p.s, p.s);
+      ctx.globalAlpha = 1;
+    }
+    ctx.restore();
+  }
+
+  function drawBackdrop(th) {
+    ctx.fillStyle = "#fff8";
+    for (let i = 0; i < 6; i++) {
+      const x = ((i * 220) - camX * 0.25) % (W + 200) - 40;
+      cloud(x, 40 + (i % 3) * 28, 40 + (i % 2) * 16);
+    }
+    if (th.deco === "city") {
+      ctx.fillStyle = "#0c0820";
+      for (let i = 0; i < 12; i++) {
+        const x = (i * 90 - camX * 0.35) % (W + 90);
+        const h = 80 + (i * 37) % 160;
+        ctx.fillRect(x, H - 160 - h * 0.4, 70, h);
+        ctx.fillStyle = i % 2 ? "#ff4fd855" : "#7cf0ff55";
+        ctx.fillRect(x + 10, H - 180, 12, 12);
+        ctx.fillStyle = "#0c0820";
+      }
+    }
+  }
+  function cloud(x, y, r) {
+    ctx.beginPath();
+    ctx.arc(x, y, r * 0.55, 0, 7);
+    ctx.arc(x + r * 0.6, y + 6, r * 0.45, 0, 7);
+    ctx.arc(x - r * 0.5, y + 8, r * 0.4, 0, 7);
+    ctx.fill();
+  }
+  function drawDecor(th) {
+    if (level.trees) {
+      for (const t of level.trees) {
+        const trunkH = t.flower ? 26 : 78;
+        ctx.fillStyle = "#5a3a1c";
+        ctx.fillRect(t.x + 6, t.y - trunkH, 8, trunkH);
+        if (t.flower) {
+          ctx.fillStyle = "#ff6fa8";
+          ctx.beginPath(); ctx.arc(t.x + 10, t.y - trunkH - 4, 8, 0, 7); ctx.fill();
+          ctx.fillStyle = "#ffe56a";
+          ctx.beginPath(); ctx.arc(t.x + 10, t.y - trunkH - 4, 3, 0, 7); ctx.fill();
+        } else {
+          ctx.fillStyle = "#2d7a32";
+          ctx.beginPath(); ctx.arc(t.x + 10, t.y - trunkH - 6, 22, 0, 7); ctx.fill();
+          ctx.fillStyle = "#4caf50";
+          ctx.beginPath(); ctx.arc(t.x + 2, t.y - trunkH + 4, 14, 0, 7); ctx.fill();
+        }
+      }
+    }
+    if (th.deco === "flags") {
+      for (let i = 0; i < 10; i++) {
+        const x = 200 + i * 240;
+        ctx.fillStyle = "#ddd"; ctx.fillRect(x, 240, 6, 190);
+        ctx.fillStyle = i % 2 ? "#ff6fa8" : "#ffe56a";
+        ctx.beginPath(); ctx.moveTo(x + 6, 242); ctx.lineTo(x + 54, 258); ctx.lineTo(x + 6, 274); ctx.fill();
+      }
+    }
+    if (th.deco === "crystals") {
+      for (let i = 0; i < 14; i++) {
+        const x = 80 + i * 190;
+        ctx.fillStyle = "#7cf0ffaa";
+        ctx.beginPath(); ctx.moveTo(x, 400); ctx.lineTo(x + 16, 300); ctx.lineTo(x + 32, 400); ctx.fill();
+      }
+    }
+  }
+  function drawPlat(p, th) {
+    ctx.fillStyle = th.ground;
+    ctx.fillRect(p.x, p.y, p.w, p.h);
+    ctx.fillStyle = th.dirt;
+    ctx.fillRect(p.x, p.y + 16, p.w, p.h);
+    ctx.fillStyle = "#fff4";
+    ctx.fillRect(p.x, p.y, p.w, 5);
+    if (p.kind === "ground") {
+      ctx.fillStyle = th.accent + "55";
+      for (let i = 0; i < p.w; i += 26) ctx.fillRect(p.x + i + 4, p.y + 6, 10, 4);
+    }
+  }
+  function drawSpikes(s) {
+    ctx.fillStyle = "#d9d9e8";
+    ctx.beginPath();
+    ctx.moveTo(s.x, s.y + s.h);
+    ctx.lineTo(s.x + s.w / 2, s.y);
+    ctx.lineTo(s.x + s.w, s.y + s.h);
+    ctx.fill();
+  }
+  function drawFish(x, y, t) {
+    ctx.save();
+    ctx.translate(x, y + Math.sin(t * 0.15 + x) * 3);
+    ctx.fillStyle = "#ff9f43";
+    ctx.beginPath(); ctx.ellipse(0, 0, 12, 7, 0, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(10, 0); ctx.lineTo(18, -6); ctx.lineTo(18, 6); ctx.fill();
+    ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(-4, -1, 2, 0, 7); ctx.fill();
+    ctx.restore();
+  }
+  function drawFoe(f) {
+    ctx.save();
+    ctx.translate(f.x + f.w / 2, f.y + f.h / 2);
+    const robo = f.kind === "robomouse";
+    ctx.fillStyle = robo ? "#8a93a8" : "#c9c3c0";
+    ctx.beginPath(); ctx.ellipse(0, 4, 13, 8, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = robo ? "#6d758c" : "#d8d2cf";
+    ctx.beginPath(); ctx.arc(10, 0, 7, 0, 7); ctx.fill();
+    ctx.fillStyle = robo ? "#cfd6e6" : "#eeeae8";
+    ctx.beginPath(); ctx.ellipse(8, -8, 4.5, 4.5, 0, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(14, -7, 3.5, 3.5, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = robo ? "#ff4fd8" : "#222";
+    ctx.beginPath(); ctx.arc(12, -1, 1.4, 0, 7); ctx.fill();
+    ctx.strokeStyle = robo ? "#9be7ff" : "#b9b3b0";
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(-12, 6); ctx.quadraticCurveTo(-22, 2, -26, 10); ctx.stroke();
+    if (robo) {
+      ctx.fillStyle = "#9be7ff";
+      ctx.fillRect(8, -14, 2, 6);
+      ctx.beginPath(); ctx.arc(9, -15, 2, 0, 7); ctx.fill();
+    }
+    ctx.restore();
+  }
+  function drawFlyer(fl) {
+    ctx.save();
+    ctx.translate(fl.x + fl.w / 2, fl.y + fl.h / 2);
+    const flap = Math.sin(time * 0.25 + fl.phase) * 8;
+    if (fl.kind === "bat") {
+      if (fl.hang) ctx.scale(1, -1);
+      ctx.fillStyle = "#2a1a38";
+      ctx.beginPath(); ctx.moveTo(-18, flap); ctx.lineTo(0, 0); ctx.lineTo(-4, 8); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(18, -flap); ctx.lineTo(0, 0); ctx.lineTo(4, 8); ctx.fill();
+      ctx.fillStyle = "#3b274d";
+      ctx.beginPath(); ctx.arc(0, 2, 7, 0, 7); ctx.fill();
+      ctx.fillStyle = "#ffb0d0";
+      ctx.beginPath(); ctx.arc(-2, 1, 1.2, 0, 7); ctx.arc(2, 1, 1.2, 0, 7); ctx.fill();
+    } else if (fl.kind === "robobird") {
+      ctx.fillStyle = "#7a8499";
+      ctx.fillRect(-10, -6, 20, 14);
+      ctx.fillStyle = "#9be7ff";
+      ctx.fillRect(-6, -2, 4, 4); ctx.fillRect(2, -2, 4, 4);
+      ctx.fillStyle = "#d0d6e2";
+      ctx.fillRect(-16, -2 + flap * 0.3, 8, 3);
+      ctx.fillRect(8, -2 - flap * 0.3, 12, 4);
+      ctx.fillStyle = "#ff4fd8";
+      ctx.fillRect(10, 2, 10, 3);
+    } else {
+      ctx.fillStyle = "#f4f1ea";
+      ctx.beginPath(); ctx.ellipse(0, 2, 12, 8, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = "#e2d8c4";
+      ctx.beginPath(); ctx.ellipse(-6, 0 + flap * 0.15, 10, 4, -0.4, 0, 7); ctx.fill();
+      ctx.fillStyle = "#ff9f43";
+      ctx.beginPath(); ctx.moveTo(10, 2); ctx.lineTo(24, 6); ctx.lineTo(10, 8); ctx.fill();
+      ctx.fillStyle = "#333";
+      ctx.beginPath(); ctx.arc(4, 0, 1.5, 0, 7); ctx.fill();
+    }
+    ctx.restore();
+  }
+  function drawGem(x, y, color) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(0, -16); ctx.lineTo(12, -4); ctx.lineTo(8, 12); ctx.lineTo(-8, 12); ctx.lineTo(-12, -4);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = "#fff8";
+    ctx.beginPath(); ctx.moveTo(-4, -8); ctx.lineTo(2, -12); ctx.lineTo(4, -4); ctx.fill();
+    ctx.restore();
+  }
+  function drawFlag(g) {
+    ctx.fillStyle = "#eee";
+    ctx.fillRect(g.x, g.y, 6, g.h);
+    ctx.fillStyle = "#ff6fa8";
+    const wave = Math.sin(time * 0.12) * 6;
+    ctx.beginPath();
+    ctx.moveTo(g.x + 6, g.y);
+    ctx.lineTo(g.x + 50 + wave, g.y + 16);
+    ctx.lineTo(g.x + 6, g.y + 32);
+    ctx.fill();
+  }
+  function drawBoss(b) {
+    ctx.save();
+    ctx.translate(b.x + b.w / 2, b.y + b.h / 2);
+    if (b.hitFlash) ctx.globalAlpha = 0.55;
+    if (b.final) {
+      ctx.fillStyle = "#e8c27a";
+      ctx.beginPath(); ctx.ellipse(-2, 8, 20, 12, 0, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(14, 2, 12, 10, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = "#f0d59a";
+      ctx.beginPath(); ctx.ellipse(16, 4, 7, 6, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = "#5a3a18";
+      ctx.beginPath(); ctx.ellipse(20, -6, 5, 6, 0.2, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(10, -7, 5, 6, -0.2, 0, 7); ctx.fill();
+      ctx.fillStyle = "#3a2010";
+      ctx.beginPath(); ctx.arc(18, 0, 1.6, 0, 7); ctx.fill();
+      ctx.fillStyle = "#ff8aa8";
+      ctx.beginPath(); ctx.ellipse(22, 4, 2.2, 1.4, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = "#ff6fa8";
+      ctx.beginPath();
+      ctx.moveTo(12, -12); ctx.lineTo(8, -22); ctx.lineTo(16, -16);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(16, -16); ctx.lineTo(22, -22); ctx.lineTo(20, -12);
+      ctx.fill();
+      ctx.fillStyle = "#fff";
+      ctx.beginPath(); ctx.arc(14, -17, 2.2, 0, 7); ctx.fill();
+      ctx.fillStyle = "#e8c27a";
+      ctx.fillRect(-10, 18, 6, 5); ctx.fillRect(4, 18, 6, 5);
+      ctx.fillStyle = "#fff";
+      ctx.font = "bold 10px Trebuchet MS";
+      ctx.fillText("Teacup", -16, -26);
+    } else {
+      ctx.fillStyle = "#7a3a9b";
+      ctx.beginPath(); ctx.arc(0, 0, 26, 0, 7); ctx.fill();
+      ctx.fillStyle = "#ffe56a";
+      ctx.beginPath(); ctx.arc(-8, -6, 5, 0, 7); ctx.arc(8, -6, 5, 0, 7); ctx.fill();
+      ctx.fillStyle = "#1b1430";
+      ctx.beginPath(); ctx.arc(-8, -6, 2, 0, 7); ctx.arc(8, -6, 2, 0, 7); ctx.fill();
+    }
+    ctx.restore();
+    ctx.fillStyle = "#fff";
+    ctx.font = "12px Trebuchet MS";
+    ctx.fillText("HP " + b.hp, b.x, b.y - 10);
+  }
+
+  function drawCat(x, y, facing, anim, onGround, vy) {
+    ctx.save();
+    ctx.translate(x + 21, y + 22);
+    ctx.scale(facing, 1);
+    const run = onGround ? Math.sin(anim * 2.2) : 0;
+    const tail = Math.sin(anim * 1.4) * 10;
+    ctx.strokeStyle = "#f4f0ea";
+    ctx.lineWidth = 5; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(-16, 2); ctx.quadraticCurveTo(-28, -10 + tail * 0.2, -34, 8 + tail); ctx.stroke();
+    ctx.fillStyle = "#f7f4ef";
+    ctx.beginPath(); ctx.ellipse(-2, 6, 16, 12, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = "#efe8dc";
+    ctx.fillRect(-10 + run * 2, 14, 6, 8);
+    ctx.fillRect(2 - run * 2, 14, 6, 8);
+    ctx.fillStyle = "#f7f4ef";
+    ctx.beginPath(); ctx.arc(12, -4, 13, 0, 7); ctx.fill();
+    ctx.fillStyle = "#f0ebe3";
+    ctx.beginPath(); ctx.moveTo(4, -14); ctx.lineTo(7, -26); ctx.lineTo(12, -14); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(14, -14); ctx.lineTo(20, -26); ctx.lineTo(22, -12); ctx.fill();
+    ctx.fillStyle = "#ffb6c8";
+    ctx.beginPath(); ctx.moveTo(6, -16); ctx.lineTo(8, -22); ctx.lineTo(10, -15); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(16, -16); ctx.lineTo(19, -22); ctx.lineTo(21, -14); ctx.fill();
+    const blink = (time % 180 < 8);
+    ctx.fillStyle = blink ? "#f7f4ef" : "#228B22";
+    ctx.beginPath(); ctx.ellipse(16, -5, 3.2, blink ? 0.6 : 3.6, 0, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(9, -5, 3.2, blink ? 0.6 : 3.6, 0, 0, 7); ctx.fill();
+    if (!blink) {
+      ctx.fillStyle = "#0b1f0b";
+      ctx.beginPath(); ctx.arc(16.4, -5, 1.3, 0, 7); ctx.arc(9.4, -5, 1.3, 0, 7); ctx.fill();
+      ctx.fillStyle = "#fff";
+      ctx.beginPath(); ctx.arc(15.4, -6.2, 0.8, 0, 7); ctx.fill();
+    }
+    ctx.fillStyle = "#ff8aa8";
+    ctx.beginPath(); ctx.moveTo(22, -1); ctx.lineTo(26, 1); ctx.lineTo(22, 3); ctx.fill();
+    ctx.strokeStyle = "#d8cfc4"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(20, 2); ctx.lineTo(32, 0); ctx.moveTo(20, 4); ctx.lineTo(31, 6); ctx.stroke();
+    if (!onGround) {
+      ctx.fillStyle = "#fff6";
+      ctx.fillRect(-8, 20, 4, 6); ctx.fillRect(4, 20, 4, 6);
+    }
+    ctx.restore();
+  }
+
+  function drawIdleTitleCat() {
+    /* panels cover the canvas on menus */
+  }
+
+  const STORY = {
+    intro: {
+      title: "Introduction",
+      body: "This is the story of Super Cat, a white cat with forest-green eyes and medium-long fur. One morning the colors of the seven worlds went missing. A tiny pampered Labrador girl named Teacup had run off with six magic gems and hidden herself in the last castle. Super Cat set out to bring the colors home."
+    },
+    chapters: [
+      { title: "Chapter 1 · Sunny Yard", body: "Super Cat started in the Sunny Yard, where flowers still remembered how to be yellow. Ground mice scurried on the grass. After the castle fight, a red gem flashed in the dirt. Super Cat touched it, and the first color came back." },
+      { title: "Chapter 2 · Whisper Forest", body: "The trees whispered Super Cat's name. Mice hid behind roots. Deeper in the woods a castle waited. When the boss fell, an orange gem rolled out like a fallen leaf. Super Cat kept going." },
+      { title: "Chapter 3 · Sandy Shores", body: "Waves patted the sand. Fish jumped for joy when Super Cat ran by. The shore castle shook, and a yellow gem shone like a little sun. Super Cat tucked it away and looked toward the mountains." },
+      { title: "Chapter 4 · Cloudy Peaks", body: "The air got thin and proud. Pelicans sailed between the clouds and tried to bump Super Cat off the path. At the peak castle a green gem dropped, cool as pine. Four colors now traveled with the white cat." },
+      { title: "Chapter 5 · Neon City", body: "The city buzzed at night. Robo-mice clicked down the streets. Robo-birds with lamp eyes swept the alleys. Super Cat was not afraid of metal. A blue gem fell from the city castle, bright as a sign." },
+      { title: "Chapter 6 · Crystal Caves", body: "The caves hummed. Bats hung from the ceiling like dark fruit, then swooped. Super Cat jumped, and jumped again. The purple gem was the last of the six. Only Teacup's Castle was left." },
+      { title: "Chapter 7 · Teacup's Castle", body: "Teacup was small, but she was still a real Labrador girl, with a pink bow and a stubborn heart. She had wanted pretty things. Super Cat was braver. After the last jump, the worlds had their hero, and Teacup had a friend who would not let the colors stay hidden." }
+    ],
+    epilogue: {
+      title: "Epilogue",
+      body: "The seven worlds got their colors back. Super Cat went home to the Sunny Yard. Teacup kept her pink bow and promised not to steal the gems again. Joseph wrote it all down so no one would forget Super Cat's Quest."
+    }
+  };
+  let bookPage = "intro";
+
+  function chapterOpen(n) {
+    if (n === 0) return true;
+    if (n >= 1 && n <= 6) return !!(save.gems && save.gems[n - 1]);
+    if (n === 7) return !!save.teacup;
+    if (n === 8) return !!save.teacup;
+    return false;
+  }
+
+  function renderBook(page) {
+    bookPage = page || "intro";
+    const row = document.getElementById("chapRow");
+    row.innerHTML = "";
+    const items = [
+      { id: "intro", label: "Intro", lock: false },
+      ...[1,2,3,4,5,6].map(n => ({ id: "c" + n, label: "Ch " + n, n, lock: !chapterOpen(n), gem: GEM_COLORS[n - 1] })),
+      { id: "c7", label: "Ch 7", n: 7, lock: !chapterOpen(7), bow: true },
+      { id: "epi", label: "Epi", n: 8, lock: !chapterOpen(8) }
+    ];
+    items.forEach(it => {
+      const el = document.createElement("div");
+      el.className = "chap" + (it.lock ? " lock" : "") + ((bookPage === it.id || (bookPage === "c" + it.n)) ? " on" : "");
+      let mark = "";
+      if (it.gem && !it.lock) mark = `<span class="gemdot" style="background:${it.gem}"></span>`;
+      if (it.bow && !it.lock) mark = "🎀";
+      el.innerHTML = it.lock ? (it.label + " 🔒") : (it.label + " " + mark);
+      el.onclick = () => { if (!it.lock) renderBook(it.id); };
+      row.appendChild(el);
+    });
+    const pageEl = document.getElementById("storyPage");
+    if (bookPage === "intro") {
+      pageEl.innerHTML = `<h3>${STORY.intro.title}</h3><p>${STORY.intro.body}</p>`;
+    } else if (bookPage === "epi") {
+      pageEl.innerHTML = chapterOpen(8)
+        ? `<h3>${STORY.epilogue.title}</h3><p>${STORY.epilogue.body}</p>`
+        : `<h3>Epilogue 🔒</h3><p>Beat Teacup to unlock the ending.</p>`;
+    } else {
+      const n = parseInt(bookPage.replace("c", ""), 10);
+      if (!chapterOpen(n)) {
+        pageEl.innerHTML = `<h3>Chapter ${n} 🔒</h3><p>This page is locked. Finish World ${n}${n === 7 ? " and beat Teacup" : " and touch the gem"} first.</p>`;
+      } else {
+        const ch = STORY.chapters[n - 1];
+        pageEl.innerHTML = `<h3>${ch.title}</h3><p>${ch.body}</p>`;
+      }
+    }
+  }
+
+  function openBook() {
+    show("title how saves map pause msg", false);
+    show("book", true);
+    renderBook("intro");
+  }
+
+  function loop() {
+    update();
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  function renderSlots() {
+    const row = document.getElementById("slotRow");
+    row.innerHTML = "";
+    saves.forEach((s, i) => {
+      const b = document.createElement("button");
+      b.className = "slot" + (s.used ? "" : " empty");
+      b.innerHTML = s.used
+        ? `<b>File ${i + 1}</b><br>World ${s.world} · Stage ${s.stage}<br>Fish ${s.fishTotal}`
+        : `<b>File ${i + 1}</b><br>Empty<br>Start new`;
+      b.onclick = () => {
+        slot = i;
+        if (!s.used) {
+          save = emptySlot();
+          save.used = true;
+          save.name = "Joseph";
+          saves[i] = save;
+          persist();
+        } else {
+          save = JSON.parse(JSON.stringify(s));
+          if (!save.gems) save.gems = [false, false, false, false, false, false];
+          if (save.teacup == null) save.teacup = false;
+        }
+        openMap();
+      };
+      row.appendChild(b);
+    });
+  }
+
+  function openMap() {
+    state = "MAP";
+    hud.classList.add("hidden");
+    document.getElementById("touch").classList.add("hidden");
+    show("title how saves pause msg book", false);
+    show("map", true);
+    const grid = document.getElementById("worldGrid");
+    grid.innerHTML = "";
+    document.getElementById("stageBox").classList.add("hidden");
+    document.getElementById("mapTitle").textContent = "Super Cat Worlds";
+    WORLDS.forEach((w, i) => {
+      const unlocked = workshop.all || i === 0 || save.unlocked[i - 1] >= 6;
+      const el = document.createElement("div");
+      el.className = "world" + (unlocked ? "" : " lock");
+      el.style.background = w.skyTop;
+      el.innerHTML = `<b>World ${i + 1}</b><br>${w.name}<br><small>${unlocked ? "Open" : "Locked"}</small>`;
+      el.onclick = () => { if (unlocked) openStages(i + 1); };
+      grid.appendChild(el);
+    });
+  }
+
+  function openStages(world) {
+    chosenWorld = world;
+    document.getElementById("mapTitle").textContent = `World ${world}: ${WORLDS[world - 1].name}`;
+    document.getElementById("stageBox").classList.remove("hidden");
+    const box = document.getElementById("stageGrid");
+    box.innerHTML = "";
+    for (let s = 1; s <= 6; s++) {
+      const worldOpen = workshop.all || world === 1 || save.unlocked[world - 2] >= 6;
+      const open = worldOpen && (workshop.all || s <= (save.unlocked[world - 1] || 0));
+      const el = document.createElement("div");
+      el.className = "stg" + (s === 6 ? " castle" : "") + (open ? "" : " lock");
+      el.innerHTML = s === 6
+        ? (world === 7 ? "Teacup's Castle" : "Castle Boss")
+        : `Stage ${s}`;
+      el.onclick = () => { if (open) startStage(world, s); };
+      box.appendChild(el);
+    }
+  }
+
+  function openPause() {
+    if (state !== "PLAY") return;
+    state = "PAUSE";
+    show("pause", true);
+    applyWorkshopToUI();
+  }
+  function closePause() {
+    show("pause", false);
+    if (level) state = "PLAY";
+  }
+
+  window.addEventListener("keydown", e => {
+    keys[e.key] = true;
+    resumeAudio();
+    if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(e.key)) e.preventDefault();
+    if (e.key === "p" || e.key === "P" || e.key === "Escape") {
+      if (state === "PLAY") openPause();
+      else if (state === "PAUSE") closePause();
+    }
+  });
+  window.addEventListener("keyup", e => { keys[e.key] = false; });
+
+  const padHeld = {};
+  function bindPad(id, key) {
+    const el = document.getElementById(id);
+    const down = e => {
+      e.preventDefault();
+      e.stopPropagation();
+      resumeAudio();
+      try { el.setPointerCapture(e.pointerId); } catch (err) {}
+      padHeld[e.pointerId] = key;
+      touch[key] = true;
+      el.classList.add("held");
+    };
+    const up = e => {
+      e.preventDefault();
+      const k = padHeld[e.pointerId] || key;
+      touch[k] = false;
+      delete padHeld[e.pointerId];
+      el.classList.remove("held");
+    };
+    el.addEventListener("pointerdown", down);
+    el.addEventListener("pointerup", up);
+    el.addEventListener("pointercancel", up);
+    el.addEventListener("lostpointercapture", up);
+  }
+  bindPad("btnL", "left");
+  bindPad("btnR", "right");
+  bindPad("btnJ", "jump");
+  document.getElementById("btnP").addEventListener("pointerdown", e => {
+    e.preventDefault();
+    resumeAudio();
+    state === "PLAY" ? openPause() : closePause();
+  });
+
+  function applyWorkshopToUI() {
+    document.getElementById("rSpeed").value = workshop.speed;
+    document.getElementById("rJump").value = workshop.jump;
+    document.getElementById("rGrav").value = workshop.grav;
+    document.getElementById("chkInv").checked = workshop.inv;
+    document.getElementById("chkAll").checked = workshop.all;
+  }
+  function resetDefaults() {
+    Object.assign(workshop, DEFAULTS);
+    applyWorkshopToUI();
+  }
+
+  document.getElementById("btnPlay").onclick = () => {
+    resumeAudio();
+    show("title", false); show("saves", true); renderSlots();
+  };
+  document.getElementById("btnHow").onclick = () => { show("title", false); show("how", true); };
+  document.getElementById("btnHowBack").onclick = () => { show("how", false); show("title", true); };
+  document.getElementById("btnBook").onclick = openBook;
+  document.getElementById("btnBookBack").onclick = () => { show("book", false); show("title", true); };
+  document.getElementById("btnSavesBack").onclick = () => { show("saves", false); show("title", true); };
+  document.getElementById("btnMapBack").onclick = () => {
+    show("map", false); show("saves", true); renderSlots();
+  };
+  document.getElementById("btnResume").onclick = closePause;
+  document.getElementById("btnQuit").onclick = () => { closePause(); persist(); openMap(); };
+  document.getElementById("btnMsg").onclick = () => { if (msgCb) msgCb(); };
+
+  ["rSpeed", "rJump", "rGrav"].forEach(id => {
+    document.getElementById(id).oninput = e => {
+      if (id === "rSpeed") workshop.speed = +e.target.value;
+      if (id === "rJump") workshop.jump = +e.target.value;
+      if (id === "rGrav") workshop.grav = +e.target.value;
+    };
+  });
+  document.getElementById("chkInv").onchange = e => workshop.inv = e.target.checked;
+  document.getElementById("chkAll").onchange = e => {
+    workshop.all = e.target.checked;
+  };
+  document.getElementById("btnDefaults").onclick = resetDefaults;
+
+  function fit() {
+    const wrap = document.getElementById("wrap");
+    const s = Math.min(wrap.clientWidth / W, wrap.clientHeight / H);
+    canvas.style.width = W * s + "px";
+    canvas.style.height = H * s + "px";
+  }
+  window.addEventListener("resize", fit);
+  fit();
+  loop();
+})();
+</script>
+</body>
+</html>
